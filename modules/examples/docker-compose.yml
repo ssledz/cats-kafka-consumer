@@ -1,0 +1,41 @@
+version: "3.3"
+
+volumes:
+  kafka_zookeeperdata: { }
+  kafka_zookeeperlog: { }
+  kafkadata: { }
+
+services:
+
+  kafka-zookeeper:
+    container_name: kafka-zookeeper
+    image: confluentinc/cp-zookeeper:5.2.0
+    restart: unless-stopped
+    volumes:
+      - kafka_zookeeperdata:/var/lib/zookeeper/data
+      - kafka_zookeeperlog:/var/lib/zookeeper/log
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_AUTOPURGE_PURGE_INTERVAL: 1
+      ZOOKEEPER_AUTOPURGE_SNAP_RETAIN_COUNT: 3
+      ZOOKEEPER_PRE_ALLOC_SIZE: 1000
+      ZOOKEEPER_SNAP_COUNT: 1000
+
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka:5.2.0
+    restart: unless-stopped
+    volumes:
+      - kafkadata:/var/lib/kafka/data
+    depends_on:
+      - kafka-zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: kafka-zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://kafka:9093,OUTSIDE://kafka:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,OUTSIDE://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_HEAP_OPTS: "-Xmx256m -Xms256m"
+    ports:
+      - "9092:9092"
